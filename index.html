@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dia da Família</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8 text-gray-800 font-sans">
+    <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold text-center text-blue-600 mb-8">Dia da Família</h1>
+
+        <section id="section-create-form" class="space-y-4">
+            <h2 class="text-xl font-semibold border-b pb-2">1. Criar Formulário</h2>
+            <div>
+                <label class="block font-medium">Nome do Aluno</label>
+                <input type="text" id="student-name" class="w-full border rounded p-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <div>
+                <label class="block font-medium">Título do Formulário</label>
+                <input type="text" id="form-title" class="w-full border rounded p-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <button id="btn-create-form" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">Iniciar Criação</button>
+        </section>
+
+        <section id="section-add-questions" class="space-y-4 hidden">
+            <h2 class="text-xl font-semibold border-b pb-2">2. Adicionar Questões</h2>
+            <div>
+                <label class="block font-medium">Pergunta</label>
+                <input type="text" id="q-text" class="w-full border rounded p-2 mt-1 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-medium">Opção A</label>
+                    <input type="text" id="q-opt-a" class="w-full border rounded p-2 mt-1">
+                </div>
+                <div>
+                    <label class="block font-medium">Opção B</label>
+                    <input type="text" id="q-opt-b" class="w-full border rounded p-2 mt-1">
+                </div>
+                <div>
+                    <label class="block font-medium">Opção C</label>
+                    <input type="text" id="q-opt-c" class="w-full border rounded p-2 mt-1">
+                </div>
+                <div>
+                    <label class="block font-medium">Opção D</label>
+                    <input type="text" id="q-opt-d" class="w-full border rounded p-2 mt-1">
+                </div>
+            </div>
+            <div>
+                <label class="block font-medium text-red-600">Alternativa Correta (A, B, C ou D)</label>
+                <input type="text" id="q-correct" maxlength="1" class="w-full border rounded p-2 mt-1 uppercase">
+            </div>
+            <div class="flex space-x-4">
+                <button id="btn-add-question" class="w-1/2 bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">Adicionar à Lista</button>
+                <button id="btn-finish-questions" class="w-1/2 bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">Finalizar e Liberar para Família</button>
+            </div>
+        </section>
+
+        <section id="section-answer-form" class="space-y-6 hidden">
+            <h2 class="text-xl font-semibold border-b pb-2 text-green-700">3. Hora de Responder!</h2>
+            <div>
+                <label class="block font-medium">Nome do Familiar</label>
+                <input type="text" id="responder-name" class="w-full border rounded p-2 mt-1 focus:outline-none focus:ring-2 focus:ring-green-400">
+            </div>
+            <div id="questions-container" class="space-y-6"></div>
+            <button id="btn-submit-attempt" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded hover:bg-green-700 transition text-lg">Enviar Respostas</button>
+        </section>
+
+        <section id="section-ranking" class="space-y-4 hidden">
+            <h2 class="text-xl font-semibold border-b pb-2 text-purple-700">4. Ranking da Família</h2>
+            <div id="ranking-container" class="bg-purple-50 p-4 rounded border border-purple-200 space-y-2"></div>
+            <button id="btn-back-to-answer" class="w-full bg-gray-600 text-white font-bold py-2 px-4 rounded hover:bg-gray-700 transition mt-4">Outro familiar quer responder</button>
+        </section>
+    </div>
+
+    <script>
+        const ApiGateway = {
+            post: async (url, data) => {
+                const response = await fetch(`http://localhost:3000${url}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                return await response.json()
+            },
+            get: async (url) => {
+                const response = await fetch(`http://localhost:3000${url}`)
+                return await response.json()
+            }
+        }
+
+        const AppState = {
+            currentFormId: null,
+            questions: []
+        }
+
+        const UIManager = {
+            showSection: (id) => {
+                document.querySelectorAll('section').forEach(sec => sec.classList.add('hidden'))
+                document.getElementById(id).classList.remove('hidden')
+            },
+            getInputValue: (id) => document.getElementById(id).value,
+            clearInput: (id) => { document.getElementById(id).value = '' },
+            renderQuestionsForAnswer: (questions) => {
+                const container = document.getElementById('questions-container')
+                container.innerHTML = ''
+                questions.forEach((q, index) => {
+                    const div = document.createElement('div')
+                    div.className = 'p-4 border rounded bg-gray-50'
+                    div.innerHTML = `
+                        <p class="font-bold mb-3 text-lg">${index + 1}. ${q.text}</p>
+                        <div class="space-y-2">
+                            <label class="block cursor-pointer hover:bg-gray-200 p-2 rounded"><input type="radio" name="q${index}" value="A" class="mr-2"> A) ${q.optionA}</label>
+                            <label class="block cursor-pointer hover:bg-gray-200 p-2 rounded"><input type="radio" name="q${index}" value="B" class="mr-2"> B) ${q.optionB}</label>
+                            <label class="block cursor-pointer hover:bg-gray-200 p-2 rounded"><input type="radio" name="q${index}" value="C" class="mr-2"> C) ${q.optionC}</label>
+                            <label class="block cursor-pointer hover:bg-gray-200 p-2 rounded"><input type="radio" name="q${index}" value="D" class="mr-2"> D) ${q.optionD}</label>
+                        </div>
+                    `
+                    container.appendChild(div)
+                })
+            },
+            renderRanking: (ranking) => {
+                const container = document.getElementById('ranking-container')
+                container.innerHTML = ''
+                ranking.forEach((r, index) => {
+                    const div = document.createElement('div')
+                    div.className = 'p-3 bg-white border rounded shadow-sm flex justify-between'
+                    div.innerHTML = `<span class="font-bold text-lg text-purple-800">${index + 1}º ${r.responder_name}</span> <span class="font-bold text-lg">${r.score} Acertos</span>`
+                    container.appendChild(div)
+                })
+            }
+        }
+
+        const AppController = {
+            init: () => {
+                document.getElementById('btn-create-form').addEventListener('click', AppController.handleCreateForm)
+                document.getElementById('btn-add-question').addEventListener('click', AppController.handleAddQuestion)
+                document.getElementById('btn-finish-questions').addEventListener('click', AppController.handleFinishForm)
+                document.getElementById('btn-submit-attempt').addEventListener('click', AppController.handleSubmitAttempt)
+                document.getElementById('btn-back-to-answer').addEventListener('click', AppController.handleBackToAnswer)
+            },
+            handleCreateForm: async () => {
+                const title = UIManager.getInputValue('form-title')
+                const studentName = UIManager.getInputValue('student-name')
+                const form = await ApiGateway.post('/forms', { title, studentName })
+                AppState.currentFormId = form.id
+                UIManager.showSection('section-add-questions')
+            },
+            handleAddQuestion: async () => {
+                const text = UIManager.getInputValue('q-text')
+                const optionA = UIManager.getInputValue('q-opt-a')
+                const optionB = UIManager.getInputValue('q-opt-b')
+                const optionC = UIManager.getInputValue('q-opt-c')
+                const optionD = UIManager.getInputValue('q-opt-d')
+                const correctOption = UIManager.getInputValue('q-correct').toUpperCase()
+                
+                const questionData = { text, optionA, optionB, optionC, optionD, correctOption }
+                const savedQuestion = await ApiGateway.post(`/forms/${AppState.currentFormId}/questions`, questionData)
+                
+                AppState.questions.push(savedQuestion)
+                
+                UIManager.clearInput('q-text')
+                UIManager.clearInput('q-opt-a')
+                UIManager.clearInput('q-opt-b')
+                UIManager.clearInput('q-opt-c')
+                UIManager.clearInput('q-opt-d')
+                UIManager.clearInput('q-correct')
+                
+                alert('Questão registrada com sucesso!')
+            },
+            handleFinishForm: () => {
+                UIManager.renderQuestionsForAnswer(AppState.questions)
+                UIManager.showSection('section-answer-form')
+            },
+            handleSubmitAttempt: async () => {
+                const responderName = UIManager.getInputValue('responder-name')
+                const answers = AppState.questions.map((q, index) => {
+                    const selected = document.querySelector(`input[name="q${index}"]:checked`)
+                    return {
+                        questionId: q.id,
+                        selectedOption: selected ? selected.value : ''
+                    }
+                })
+                
+                await ApiGateway.post(`/forms/${AppState.currentFormId}/attempts`, { responderName, answers })
+                UIManager.clearInput('responder-name')
+                
+                const radioInputs = document.querySelectorAll('input[type="radio"]')
+                radioInputs.forEach(radio => radio.checked = false)
+
+                AppController.handleViewRanking()
+            },
+            handleViewRanking: async () => {
+                const ranking = await ApiGateway.get(`/forms/${AppState.currentFormId}/ranking`)
+                UIManager.renderRanking(ranking)
+                UIManager.showSection('section-ranking')
+            },
+            handleBackToAnswer: () => {
+                UIManager.showSection('section-answer-form')
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', AppController.init)
+    </script>
+</body>
+</html>

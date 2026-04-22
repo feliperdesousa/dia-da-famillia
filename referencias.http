@@ -1,0 +1,75 @@
+@baseUrl = http://localhost:3000
+
+###
+POST {{baseUrl}}/forms
+Content-Type: application/json
+
+{
+  "title": "Quiz do Joãozinho",
+  "studentName": "João Silva"
+}
+
+###
+POST {{baseUrl}}/forms/1/questions
+Content-Type: application/json
+
+{
+  "text": "Qual o tamanho do meu pé?",
+  "optionA": "38",
+  "optionB": "40",
+  "optionC": "42",
+  "optionD": "44",
+  "correctOption": "B"
+}
+
+###
+POST {{baseUrl}}/forms/1/questions
+Content-Type: application/json
+
+{
+  "text": "Qual é a minha cor favorita?",
+  "optionA": "Azul",
+  "optionB": "Vermelho",
+  "optionC": "Verde",
+  "optionD": "Amarelo",
+  "correctOption": "A"
+}
+
+###
+POST {{baseUrl}}/forms/1/attempts
+Content-Type: application/json
+
+{
+  "responderName": "Pai do Joãozinho",
+  "answers": [
+    {
+      "questionId": 1,
+      "selectedOption": "B"
+    },
+    {
+      "questionId": 2,
+      "selectedOption": "C"
+    }
+  ]
+}
+
+###
+POST {{baseUrl}}/forms/1/attempts
+Content-Type: application/json
+
+{
+  "responderName": "Mãe do Joãozinho",
+  "answers": [
+    {
+      "questionId": 1,
+      "selectedOption": "B"
+    },
+    {
+      "questionId": 2,
+      "selectedOption": "A"
+    }
+  ]
+}
+
+###
+GET {{baseUrl}}/forms/1/ranking
