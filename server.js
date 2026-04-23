@@ -1,15 +1,25 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import pkg from 'pg'
+import * as dotenv from 'dotenv'
+
+dotenv.config
 
 const { Pool } = pkg
 
+// const pool = new Pool({
+//   user: 'postgres',
+//   password: 'senai',
+//   host: 'localhost',
+//   port: 5432,
+//   database: 'familia'
+// })
+
 const pool = new Pool({
-  user: 'postgres',
-  password: 'senai',
-  host: 'localhost',
-  port: 5432,
-  database: 'familia'
+  connectionString: process.env.url_bd,
+  ssl: {
+    rejectUnauthorized: false
+  }
 })
 
 class FormRepository {
